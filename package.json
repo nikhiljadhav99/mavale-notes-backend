@@ -2,11 +2,11 @@
   "name": "smart-notes-backend",
   "version": "1.0.0",
   "description": "Smart Notes App Backend",
-  "main": "src/server.ts",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc --noEmit",
-    "start": "ts-node-dev --transpile-only src/server.ts"
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "Nikhil Jadhav",
