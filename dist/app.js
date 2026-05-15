@@ -1,0 +1,24 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const fastify_1 = __importDefault(require("fastify"));
+const notes_routes_1 = __importDefault(require("./modules/notes/notes.routes"));
+const auth_routes_1 = __importDefault(require("./modules/auth/auth.routes"));
+const transaction_routes_1 = __importDefault(require("./modules/transactions/transaction.routes"));
+const user_routes_1 = __importDefault(require("./modules/user/user.routes"));
+const jwt_1 = __importDefault(require("./plugins/jwt"));
+const cors_1 = __importDefault(require("./plugins/cors"));
+const swagger_1 = __importDefault(require("./plugins/swagger"));
+const rateLimit_1 = __importDefault(require("./plugins/rateLimit"));
+const app = (0, fastify_1.default)({ logger: true });
+app.register(cors_1.default);
+app.register(rateLimit_1.default);
+app.register(jwt_1.default);
+app.register(swagger_1.default);
+app.register(auth_routes_1.default);
+app.register(user_routes_1.default);
+app.register(notes_routes_1.default);
+app.register(transaction_routes_1.default);
+exports.default = app;
