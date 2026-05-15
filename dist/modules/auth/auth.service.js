@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.loginUser = exports.registerUser = void 0;
 const db_1 = require("../../config/db");
 const user_model_1 = __importDefault(require("../user/user.model"));
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const registerUser = async (data) => {
     const transaction = await db_1.sequelize.transaction();
     try {

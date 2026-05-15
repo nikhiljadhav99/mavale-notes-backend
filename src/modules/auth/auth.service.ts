@@ -1,6 +1,6 @@
 import { sequelize } from "../../config/db";
 import User from "../user/user.model";
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 export const registerUser = async (data: any) => {
   const transaction = await sequelize.transaction();

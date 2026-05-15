@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.changePassword = exports.updateProfile = exports.getProfile = void 0;
 const user_model_1 = __importDefault(require("./user.model"));
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const getProfile = async (req, reply) => {
     const user = await user_model_1.default.findByPk(req.user.id);
     if (!user) {

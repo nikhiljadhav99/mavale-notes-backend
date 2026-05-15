@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import User from "./user.model";
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 export const getProfile = async (req: FastifyRequest, reply: FastifyReply) => {
   const user = await User.findByPk((req.user as any).id);
