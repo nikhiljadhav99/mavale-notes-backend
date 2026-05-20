@@ -33,16 +33,17 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.env = void 0;
-const dotenv = __importStar(require("dotenv"));
-dotenv.config();
-exports.env = {
-    PORT: process.env.PORT || "5000",
-    DATABASE_URL: process.env.DATABASE_URL || "",
-    JWT_SECRET: process.env.JWT_SECRET || "smart_notes_secret",
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
-    OPENAI_MODEL: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-    MAIL_USER: process.env.MAIL_USER || "",
-    MAIL_PASS: process.env.MAIL_PASS || "",
-    REMINDER_EMAIL: process.env.REMINDER_EMAIL || process.env.MAIL_USER || ""
+exports.voiceChat = void 0;
+const aiService = __importStar(require("./ai.service"));
+const voiceChat = async (req, reply) => {
+    try {
+        const result = await aiService.createVoiceChatResponse(req.body);
+        return reply.send(result);
+    }
+    catch (error) {
+        return reply.status(400).send({
+            message: error?.message || "AI voice chat failed",
+        });
+    }
 };
+exports.voiceChat = voiceChat;

@@ -3,6 +3,7 @@ import notesRoutes from "./modules/notes/notes.routes";
 import authRoutes from "./modules/auth/auth.routes";
 import transactionRoutes from "./modules/transactions/transaction.routes";
 import userRoutes from "./modules/user/user.routes";
+import aiRoutes from "./modules/ai/ai.routes";
 
 import jwtPlugin from "./plugins/jwt";
 import corsPlugin from "./plugins/cors";
@@ -20,5 +21,6 @@ app.register(authRoutes);
 app.register(userRoutes);
 app.register(notesRoutes);
 app.register(transactionRoutes);
+app.register(aiRoutes);
 
 export default app;
