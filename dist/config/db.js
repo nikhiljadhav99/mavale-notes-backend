@@ -2,10 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sequelize = void 0;
 const sequelize_1 = require("sequelize");
-const env_1 = require("./env");
-exports.sequelize = new sequelize_1.Sequelize(env_1.env.DB_NAME, env_1.env.DB_USER, env_1.env.DB_PASS, {
-    host: env_1.env.DB_HOST,
-    port: Number(env_1.env.DB_PORT),
+const DATABASE_URL = process.env.DATABASE_URL || "";
+exports.sequelize = new sequelize_1.Sequelize(DATABASE_URL, {
     dialect: "postgres",
     logging: false,
     dialectOptions: {
