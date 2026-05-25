@@ -1,5 +1,6 @@
 import { sequelize } from "../../config/db";
 import User from "../user/user.model";
+import { Op } from "sequelize";
 const bcrypt = require("bcryptjs");
 
 export const registerUser = async (data: any) => {
@@ -47,13 +48,18 @@ export const registerUser = async (data: any) => {
   }
 };
 
-export const loginUser = async (email: string, password: string) => {
-  if (!email || !password) {
-    throw new Error("Email and password are required");
+export const loginUser = async (emailOrPhone: string, password: string) => {
+  if (!emailOrPhone || !password) {
+    throw new Error("Email/Phone and password are required");
   }
 
   const user = await User.findOne({
-    where: { email },
+    where: { 
+      [Op.or]: [
+        { email: emailOrPhone },
+        { phone: emailOrPhone }
+      ]
+    },
   });
 
   if (!user) {

@@ -2,7 +2,6 @@ import { Op, WhereOptions } from "sequelize";
 import Transaction from "./transaction.model";
 
 type TransactionFilters = {
-  category?: string;
   from_date?: string;
   search?: string;
   to_date?: string;
@@ -20,17 +19,13 @@ const buildWhere = (filters: TransactionFilters): WhereOptions => {
     where.type = filters.type;
   }
 
-  if (filters.category) {
-    where.category = filters.category;
-  }
-
   if (filters.from_date || filters.to_date) {
-    where.work_date = {};
+    where.transaction_date = {};
     if (filters.from_date) {
-      where.work_date[Op.gte] = filters.from_date;
+      where.transaction_date[Op.gte] = filters.from_date;
     }
     if (filters.to_date) {
-      where.work_date[Op.lte] = filters.to_date;
+      where.transaction_date[Op.lte] = filters.to_date;
     }
   }
 
@@ -49,10 +44,22 @@ const buildWhere = (filters: TransactionFilters): WhereOptions => {
 
 const toAmount = (value: any) => Number(value || 0);
 
+const today = () => new Date().toISOString().slice(0, 10);
+
+const hasWorkEntryFields = (data: any) => {
+  return [
+    "farmer_name",
+    "work_date",
+    "work_type",
+    "daily_salary_rate",
+    "advance_amount"
+  ].some((field) => data[field] !== undefined && data[field] !== "");
+};
+
 const normalizeWorkEntryData = (data: any) => {
   const farmerName = data.farmer_name || data.title || "";
   const workType = data.work_type || "";
-  const workDate = data.work_date || data.transaction_date || new Date().toISOString().slice(0, 10);
+  const workDate = data.work_date || data.transaction_date || today();
   const dailySalaryRate = toAmount(data.daily_salary_rate ?? data.amount);
   const advanceAmount = toAmount(data.advance_amount);
   const paidAmount = toAmount(data.paid_amount);
@@ -66,7 +73,7 @@ const normalizeWorkEntryData = (data: any) => {
     title: farmerName,
     amount: dailySalaryRate,
     type: "expense",
-    category: "Daily Work",
+    category: "",
     description: note,
     transaction_date: workDate,
     farmer_name: farmerName,
@@ -80,15 +87,66 @@ const normalizeWorkEntryData = (data: any) => {
   };
 };
 
+export const normalizeTransactionData = (data: any) => {
+  if (hasWorkEntryFields(data)) {
+    return normalizeWorkEntryData(data);
+  }
+
+  const amount = toAmount(data.amount ?? data.daily_salary_rate);
+  const type = data.type === "income" ? "income" : "expense";
+  const date = data.transaction_date || data.work_date || today();
+  const title = data.title || data.farmer_name || "Transaction";
+  const note = data.note || data.description || "";
+  const paidAmount =
+    data.paid_amount === undefined ? (type === "income" ? amount : 0) : toAmount(data.paid_amount);
+  const remainingAmount =
+    data.remaining_amount === undefined ? 0 : toAmount(data.remaining_amount);
+
+  return {
+    ...data,
+    title,
+    amount,
+    type,
+    category: "",
+    description: note,
+    transaction_date: date,
+    farmer_name: "",
+    work_date: date,
+    work_type: data.work_type || "",
+    daily_salary_rate: amount,
+    advance_amount: 0,
+    paid_amount: paidAmount,
+    remaining_amount: remainingAmount,
+    note
+  };
+};
+
+const publicTransactionAttributes = {
+  exclude: ["category"]
+};
+
+const removePrivateTransactionFields = (transaction: any) => {
+  const json = transaction?.toJSON ? transaction.toJSON() : transaction;
+  if (json && typeof json === "object") {
+    delete json.category;
+  }
+  return json;
+};
+
 export const createTransactionService = async (userId: string, data: any) => {
   const { user_id, ...transactionData } = data;
-  return Transaction.create({ ...normalizeWorkEntryData(transactionData), user_id: userId });
+  const transaction = await Transaction.create({
+    ...normalizeTransactionData(transactionData),
+    user_id: userId
+  });
+  return removePrivateTransactionFields(transaction);
 };
 
 export const getTransactionsService = async (filters: TransactionFilters) => {
   return Transaction.findAll({
     where: buildWhere(filters),
-    order: [["work_date", "DESC"], ["createdAt", "DESC"]]
+    attributes: publicTransactionAttributes,
+    order: [["transaction_date", "DESC"], ["createdAt", "DESC"]]
   });
 };
 
@@ -97,33 +155,37 @@ export const getTransactionSummaryService = async (userId: string) => {
     deleted_at: null,
     user_id: userId
   };
-  const [totalSalary, totalAdvance, totalPaid, totalRemaining] = await Promise.all([
-    Transaction.sum("daily_salary_rate", { where: activeTransactionWhere }),
-    Transaction.sum("advance_amount", { where: activeTransactionWhere }),
-    Transaction.sum("paid_amount", { where: activeTransactionWhere }),
-    Transaction.sum("remaining_amount", { where: activeTransactionWhere })
+  const [totalExpense, totalReceived, totalPending] = await Promise.all([
+    Transaction.sum("amount", {
+      where: { ...activeTransactionWhere, type: "expense" }
+    }),
+    Transaction.sum("amount", {
+      where: { ...activeTransactionWhere, type: "income" }
+    }),
+    Transaction.sum("remaining_amount", {
+      where: activeTransactionWhere
+    })
   ]);
 
-  const salary = Number(totalSalary || 0);
-  const advance = Number(totalAdvance || 0);
-  const paid = Number(totalPaid || 0);
-  const remaining = Number(totalRemaining || 0);
+  const expense = Number(totalExpense || 0);
+  const received = Number(totalReceived || 0);
+  const pending = Number(totalPending || 0);
 
   return {
-    total_income: salary,
-    total_expense: paid,
-    balance: remaining,
-    total_advance: advance,
-    total_salary: salary,
-    total_paid: paid,
-    total_remaining: remaining
+    total_income: received,
+    total_expense: expense,
+    balance: received - expense,
+    total_received: received,
+    total_pending: pending,
+    total_paid: received,
+    total_remaining: pending
   };
 };
 
 export const updateTransactionService = async (userId: string, id: string, data: any) => {
   const { user_id, ...transactionData } = data;
   const [updatedCount] = await Transaction.update(
-    normalizeWorkEntryData(transactionData),
+    normalizeTransactionData(transactionData),
     { where: { deleted_at: null, id, user_id: userId } }
   );
 
@@ -131,7 +193,10 @@ export const updateTransactionService = async (userId: string, id: string, data:
     return null;
   }
 
-  return Transaction.findOne({ where: { deleted_at: null, id, user_id: userId } });
+  return Transaction.findOne({
+    where: { deleted_at: null, id, user_id: userId },
+    attributes: publicTransactionAttributes
+  });
 };
 
 export const deleteTransactionService = async (userId: string, id: string) => {

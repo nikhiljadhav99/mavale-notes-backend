@@ -11,7 +11,6 @@ export const getNotes = async (req: FastifyRequest, reply: FastifyReply) => {
   const page = Math.max(Number(query.page) || 1, 1);
   const limit = Math.min(Math.max(Number(query.limit) || 6, 1), 50);
   const notes = await noteService.getNotesService({
-    activeCategory: query.activeCategory || "",
     activeView: query.activeView || "",
     limit,
     page,

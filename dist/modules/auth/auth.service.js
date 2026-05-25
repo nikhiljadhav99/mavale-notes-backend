@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.loginUser = exports.registerUser = void 0;
 const db_1 = require("../../config/db");
 const user_model_1 = __importDefault(require("../user/user.model"));
+const sequelize_1 = require("sequelize");
 const bcrypt = require("bcryptjs");
 const registerUser = async (data) => {
     const transaction = await db_1.sequelize.transaction();
@@ -41,12 +42,17 @@ const registerUser = async (data) => {
     }
 };
 exports.registerUser = registerUser;
-const loginUser = async (email, password) => {
-    if (!email || !password) {
-        throw new Error("Email and password are required");
+const loginUser = async (emailOrPhone, password) => {
+    if (!emailOrPhone || !password) {
+        throw new Error("Email/Phone and password are required");
     }
     const user = await user_model_1.default.findOne({
-        where: { email },
+        where: {
+            [sequelize_1.Op.or]: [
+                { email: emailOrPhone },
+                { phone: emailOrPhone }
+            ]
+        },
     });
     if (!user) {
         throw new Error("User not found");

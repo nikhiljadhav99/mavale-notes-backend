@@ -36,9 +36,7 @@ const Transaction = sequelize.define("Transaction", {
   category: {
     type: DataTypes.STRING,
     allowNull: false,
-    validate: {
-      notEmpty: true
-    }
+    defaultValue: ""
   },
   description: {
     type: DataTypes.TEXT,
@@ -104,7 +102,6 @@ const Transaction = sequelize.define("Transaction", {
   indexes: [
     { fields: ["user_id"] },
     { fields: ["type"] },
-    { fields: ["category"] },
     { fields: ["transaction_date"] },
     { fields: ["farmer_name"] },
     { fields: ["work_date"] },

@@ -40,19 +40,6 @@ const Notes = sequelize.define("Note", {
   },
   deleted_at: {
     type: DataTypes.DATE
-  },
-  tags: {
-    type: DataTypes.JSONB,
-    allowNull: false,
-    defaultValue: []
-  },
-  category: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: "Personal",
-    validate: {
-      isIn: [["Personal", "Work", "Study", "Important"]]
-    }
   }
 }, {
   timestamps: true,
@@ -61,8 +48,7 @@ const Notes = sequelize.define("Note", {
     { fields: ["pinned"] },
     { fields: ["favorite"] },
     { fields: ["archived"] },
-    { fields: ["deleted_at"] },
-    { fields: ["category"] }
+    { fields: ["deleted_at"] }
   ]
 });
 

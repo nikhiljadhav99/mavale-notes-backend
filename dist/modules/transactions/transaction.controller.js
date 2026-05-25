@@ -44,7 +44,6 @@ exports.createTransaction = createTransaction;
 const getTransactions = async (req, reply) => {
     const query = req.query;
     const transactions = await transactionService.getTransactionsService({
-        category: query.category || "",
         from_date: query.from_date || "",
         search: query.search || "",
         to_date: query.to_date || "",

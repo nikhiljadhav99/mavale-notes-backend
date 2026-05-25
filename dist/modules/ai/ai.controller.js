@@ -37,7 +37,8 @@ exports.voiceChat = void 0;
 const aiService = __importStar(require("./ai.service"));
 const voiceChat = async (req, reply) => {
     try {
-        const result = await aiService.createVoiceChatResponse(req.body);
+        const userId = req.user.id;
+        const result = await aiService.createVoiceChatResponse(userId, req.body);
         return reply.send(result);
     }
     catch (error) {

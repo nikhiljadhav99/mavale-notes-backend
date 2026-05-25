@@ -2,8 +2,14 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import User from "./user.model";
 const bcrypt = require("bcryptjs");
 
+const publicUserAttributes = {
+  exclude: ["password"]
+};
+
 export const getProfile = async (req: FastifyRequest, reply: FastifyReply) => {
-  const user = await User.findByPk((req.user as any).id);
+  const user = await User.findByPk((req.user as any).id, {
+    attributes: publicUserAttributes
+  });
   if (!user) {
     return reply.status(404).send({ message: "User not found" });
   }
@@ -32,7 +38,10 @@ export const updateProfile = async (req: FastifyRequest, reply: FastifyReply) =>
   }
 
   await user.update({ name, email, phone, location });
-  return reply.send(user);
+  const updatedUser = await User.findByPk(user.get("id") as string, {
+    attributes: publicUserAttributes
+  });
+  return reply.send(updatedUser);
 };
 
 export const changePassword = async (req: FastifyRequest, reply: FastifyReply) => {

@@ -1,19 +1,31 @@
 import { Op, WhereOptions } from "sequelize";
 import Notes from "./notes.model";
 
+const publicNoteAttributes = { exclude: ["category", "tags"] };
+
+const removePrivateNoteFields = (note: any) => {
+  const json = note?.toJSON ? note.toJSON() : note;
+  if (json && typeof json === "object") {
+    delete json.category;
+    delete json.tags;
+  }
+  return json;
+};
+
 export const createNoteService = async (data: any) => {
-  return await Notes.create(data);
+  const { category, tags, ...noteData } = data;
+  const note = await Notes.create(noteData);
+  return removePrivateNoteFields(note);
 };
 
 type GetNotesOptions = {
-  activeCategory?: string;
   activeView?: string;
   limit: number;
   page: number;
   searchTerm?: string;
 };
 
-const buildNotesWhere = ({ activeCategory, activeView, searchTerm }: GetNotesOptions): WhereOptions => {
+const buildNotesWhere = ({ activeView, searchTerm }: GetNotesOptions): WhereOptions => {
   const where: any = {};
 
   if (activeView === "trash") {
@@ -32,19 +44,10 @@ const buildNotesWhere = ({ activeCategory, activeView, searchTerm }: GetNotesOpt
     where.archived = false;
   }
 
-  if (activeView === "tags") {
-    where.tags = { [Op.ne]: [] };
-  }
-
-  if (activeCategory) {
-    where.category = activeCategory;
-  }
-
   if (searchTerm) {
     where[Op.or as any] = [
       { title: { [Op.iLike]: `%${searchTerm}%` } },
-      { content: { [Op.iLike]: `%${searchTerm}%` } },
-      { category: { [Op.iLike]: `%${searchTerm}%` } }
+      { content: { [Op.iLike]: `%${searchTerm}%` } }
     ];
   }
 
@@ -56,6 +59,7 @@ export const getNotesService = async (options: GetNotesOptions) => {
   const where = buildNotesWhere(options);
   const result = await Notes.findAndCountAll({
     where,
+    attributes: publicNoteAttributes,
     limit: options.limit,
     offset,
     order: [["pinned", "DESC"], ["favorite", "DESC"], ["createdAt", "DESC"]]
@@ -94,21 +98,22 @@ export const getNotesService = async (options: GetNotesOptions) => {
 };
 
 export const updateNoteService = async (id: string, data: any) => {
-  await Notes.update(data, { where: { id } });
-  return Notes.findByPk(id);
+  const { category, tags, ...noteData } = data;
+  await Notes.update(noteData, { where: { id } });
+  return Notes.findByPk(id, { attributes: publicNoteAttributes });
 };
 
 export const deleteNoteService = async (id: string) => {
   await Notes.update({ deleted_at: new Date() }, { where: { id } });
-  return Notes.findByPk(id);
+  return Notes.findByPk(id, { attributes: publicNoteAttributes });
 };
 
 export const restoreNoteService = async (id: string) => {
   await Notes.update({ deleted_at: null }, { where: { id } });
-  return Notes.findByPk(id);
+  return Notes.findByPk(id, { attributes: publicNoteAttributes });
 };
 
 export const permanentlyDeleteNoteService = async (id: string) => {
   await Notes.update({ deleted_at: new Date() }, { where: { id } });
-  return Notes.findByPk(id);
+  return Notes.findByPk(id, { attributes: publicNoteAttributes });
 };

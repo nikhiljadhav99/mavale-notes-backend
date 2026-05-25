@@ -11,7 +11,6 @@ export const createTransaction = async (req: FastifyRequest, reply: FastifyReply
 export const getTransactions = async (req: FastifyRequest, reply: FastifyReply) => {
   const query = req.query as any;
   const transactions = await transactionService.getTransactionsService({
-    category: query.category || "",
     from_date: query.from_date || "",
     search: query.search || "",
     to_date: query.to_date || "",

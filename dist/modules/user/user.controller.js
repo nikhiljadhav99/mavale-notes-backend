@@ -6,8 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.changePassword = exports.updateProfile = exports.getProfile = void 0;
 const user_model_1 = __importDefault(require("./user.model"));
 const bcrypt = require("bcryptjs");
+const publicUserAttributes = {
+    exclude: ["password"]
+};
 const getProfile = async (req, reply) => {
-    const user = await user_model_1.default.findByPk(req.user.id);
+    const user = await user_model_1.default.findByPk(req.user.id, {
+        attributes: publicUserAttributes
+    });
     if (!user) {
         return reply.status(404).send({ message: "User not found" });
     }
@@ -30,7 +35,10 @@ const updateProfile = async (req, reply) => {
         return reply.status(400).send({ message: "Email already in use" });
     }
     await user.update({ name, email, phone, location });
-    return reply.send(user);
+    const updatedUser = await user_model_1.default.findByPk(user.get("id"), {
+        attributes: publicUserAttributes
+    });
+    return reply.send(updatedUser);
 };
 exports.updateProfile = updateProfile;
 const changePassword = async (req, reply) => {

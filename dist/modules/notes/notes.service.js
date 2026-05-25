@@ -6,11 +6,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.permanentlyDeleteNoteService = exports.restoreNoteService = exports.deleteNoteService = exports.updateNoteService = exports.getNotesService = exports.createNoteService = void 0;
 const sequelize_1 = require("sequelize");
 const notes_model_1 = __importDefault(require("./notes.model"));
+const publicNoteAttributes = { exclude: ["category", "tags"] };
+const removePrivateNoteFields = (note) => {
+    const json = note?.toJSON ? note.toJSON() : note;
+    if (json && typeof json === "object") {
+        delete json.category;
+        delete json.tags;
+    }
+    return json;
+};
 const createNoteService = async (data) => {
-    return await notes_model_1.default.create(data);
+    const { category, tags, ...noteData } = data;
+    const note = await notes_model_1.default.create(noteData);
+    return removePrivateNoteFields(note);
 };
 exports.createNoteService = createNoteService;
-const buildNotesWhere = ({ activeCategory, activeView, searchTerm }) => {
+const buildNotesWhere = ({ activeView, searchTerm }) => {
     const where = {};
     if (activeView === "trash") {
         where.deleted_at = { [sequelize_1.Op.not]: null };
@@ -27,17 +38,10 @@ const buildNotesWhere = ({ activeCategory, activeView, searchTerm }) => {
     else if (activeView !== "trash") {
         where.archived = false;
     }
-    if (activeView === "tags") {
-        where.tags = { [sequelize_1.Op.ne]: [] };
-    }
-    if (activeCategory) {
-        where.category = activeCategory;
-    }
     if (searchTerm) {
         where[sequelize_1.Op.or] = [
             { title: { [sequelize_1.Op.iLike]: `%${searchTerm}%` } },
-            { content: { [sequelize_1.Op.iLike]: `%${searchTerm}%` } },
-            { category: { [sequelize_1.Op.iLike]: `%${searchTerm}%` } }
+            { content: { [sequelize_1.Op.iLike]: `%${searchTerm}%` } }
         ];
     }
     return where;
@@ -47,6 +51,7 @@ const getNotesService = async (options) => {
     const where = buildNotesWhere(options);
     const result = await notes_model_1.default.findAndCountAll({
         where,
+        attributes: publicNoteAttributes,
         limit: options.limit,
         offset,
         order: [["pinned", "DESC"], ["favorite", "DESC"], ["createdAt", "DESC"]]
@@ -83,22 +88,23 @@ const getNotesService = async (options) => {
 };
 exports.getNotesService = getNotesService;
 const updateNoteService = async (id, data) => {
-    await notes_model_1.default.update(data, { where: { id } });
-    return notes_model_1.default.findByPk(id);
+    const { category, tags, ...noteData } = data;
+    await notes_model_1.default.update(noteData, { where: { id } });
+    return notes_model_1.default.findByPk(id, { attributes: publicNoteAttributes });
 };
 exports.updateNoteService = updateNoteService;
 const deleteNoteService = async (id) => {
     await notes_model_1.default.update({ deleted_at: new Date() }, { where: { id } });
-    return notes_model_1.default.findByPk(id);
+    return notes_model_1.default.findByPk(id, { attributes: publicNoteAttributes });
 };
 exports.deleteNoteService = deleteNoteService;
 const restoreNoteService = async (id) => {
     await notes_model_1.default.update({ deleted_at: null }, { where: { id } });
-    return notes_model_1.default.findByPk(id);
+    return notes_model_1.default.findByPk(id, { attributes: publicNoteAttributes });
 };
 exports.restoreNoteService = restoreNoteService;
 const permanentlyDeleteNoteService = async (id) => {
     await notes_model_1.default.update({ deleted_at: new Date() }, { where: { id } });
-    return notes_model_1.default.findByPk(id);
+    return notes_model_1.default.findByPk(id, { attributes: publicNoteAttributes });
 };
 exports.permanentlyDeleteNoteService = permanentlyDeleteNoteService;

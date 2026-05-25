@@ -21,7 +21,16 @@ export const login = async (req: FastifyRequest, reply: FastifyReply) => {
       email: user.get("email")
     });
 
-    return reply.send({ token, user });
+    return reply.send({
+      token,
+      user: {
+        id: user.get("id"),
+        name: user.get("name"),
+        email: user.get("email"),
+        phone: user.get("phone"),
+        location: user.get("location")
+      }
+    });
   } catch (error: any) {
     return reply.status(400).send({ message: error?.message || "Login failed" });
   }
