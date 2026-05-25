@@ -7,5 +7,11 @@ exports.sequelize = new sequelize_1.Sequelize(env_1.env.DB_NAME, env_1.env.DB_US
     host: env_1.env.DB_HOST,
     port: Number(env_1.env.DB_PORT),
     dialect: "postgres",
-    logging: false
+    logging: false,
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    }
 });
